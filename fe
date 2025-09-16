@@ -18,6 +18,7 @@ def creer_ville(nb_noeuds, proba_route=0.3):
     cycles = {}
     for i in range(nb_noeuds):
         # chaque noeud a un cycle aléatoire vert/rouge
+
         cycles[i] = (random.randint(5, 15), random.randint(10, 30))
         G.add_node(i)
         cycles[i] = (random.randint(5, 15), random.randint(10, 30))# possibilité de modifier le random des cycles 
@@ -71,10 +72,21 @@ def anime_ville(G, cycles, duree=50):
                 labels=labels, node_size=1000, font_color="white")
         nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
         ax.set_title(f"Temps = {t}")
+        
+        if chemin:
+            # déterminer la position approximative de la voiture
+            idx = min(t // 2, len(chemin) - 1)  # avance tous les 2 "temps"
+            current_node = chemin[idx]
+            ax.scatter(*pos[current_node], c="blue", s=300, marker="o", edgecolors="black", zorder=3, label="Voiture")
 
+        ax.set_title(f"Temps = {t}")
     ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False) #animation trucs
     plt.show() 
 
 #Exqimarchebien
-G, cycles = creer_ville(6, 0.4)
-anime_ville(G, cycles, duree=40)
+G, cycles = creer_ville(8, 0.3)
+depart, arrivee = 0, 5
+temps, chemin = dijkstra_dynamique(G, cycles, depart, arrivee)
+print(f"Chemin trouvé : {chemin} en {temps} secondes")
+
+anime_ville(G, cycles, chemin, duree=40)
