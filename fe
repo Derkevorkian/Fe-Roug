@@ -1,0 +1,13 @@
+import networkx as nx
+import heapq
+import random
+
+def temps_attente(cycle, t):
+    """Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge)."""
+    vert, rouge = cycle
+    periode = vert + rouge
+    t_mod = t % periode
+    if t_mod < vert:
+        return 0  # vert
+    else:
+        return periode - t_mod  # attente jusqu'au prochain vert
