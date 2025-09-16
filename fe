@@ -11,3 +11,12 @@ def temps_attente(cycle, t):
         return 0  # vert
     else:
         return periode - t_mod  # attente jusqu'au prochain vert
+
+def creer_ville(nb_noeuds, proba_route=0.3):
+    """Crée une ville simple avec des routes et des feux rouges."""
+    G = nx.DiGraph()
+    cycles = {}
+    for i in range(nb_noeuds):
+        # chaque noeud a un cycle aléatoire vert/rouge
+        cycles[i] = (random.randint(5, 15), random.randint(10, 30))
+        G.add_node(i)
