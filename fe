@@ -47,3 +47,34 @@ def dijkstra_dynamique(G, cycles, depart, arrivee):
             nouveau_temps = t_arr + attente
             heapq.heappush(file, (nouveau_temps, voisin, chemin + [voisin]))
     return float("inf"), []
+
+
+# partie animation 
+def anime_ville(G, cycles, duree=50):
+    pos = nx.spring_layout(G, seed=42)
+
+    fig, ax = plt.subplots(figsize=(6, 6)) #taille 6*6
+
+    def update(t): #temps courant
+        ax.clear() #enleve le graphe précedent
+        couleurs = []
+        labels = {}
+        for n in G.nodes():
+            cycle = cycles[n]
+            attente = temps_attente(cycle, t) #check les cycles
+            if attente == 0:
+                couleurs.append("green")
+            else:
+                couleurs.append("red")
+            labels[n] = f"{n}\n({cycle[0]},{cycle[1]})" #dessine la couleur et le cycle
+        nx.draw(G, pos, ax=ax, with_labels=True, node_color=couleurs,
+                labels=labels, node_size=1000, font_color="white")
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
+        ax.set_title(f"Temps = {t}")
+
+    ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False) #animation trucs
+    plt.show() 
+
+#Exqimarchebien
+G, cycles = creer_ville(6, 0.4)
+anime_ville(G, cycles, duree=40)
