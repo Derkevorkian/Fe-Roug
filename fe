@@ -1,6 +1,8 @@
 import networkx as nx
 import heapq
 import random
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 def temps_attente(cycle, t):
     """Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge)."""
@@ -18,17 +20,15 @@ def creer_ville(nb_noeuds, proba_route=0.3):
     cycles = {}
     for i in range(nb_noeuds):
         # chaque noeud a un cycle aléatoire vert/rouge
-
         cycles[i] = (random.randint(5, 15), random.randint(10, 30))
         G.add_node(i)
-        cycles[i] = (random.randint(5, 15), random.randint(10, 30))# possibilité de modifier le random des cycles 
-        G.add_node(i)
-        #cree les routes 
-        for u in range(nb_noeuds):
-            for v in range(nb_noeuds):
-                if u != v and random.random() < proba_route:
-                   G.add_edge(u, v, weight=random.randint(1, 10) #mettre le poids des feux)
-        return G,cycles
+
+    # ajouter des routes aléatoires
+    for u in range(nb_noeuds):
+        for v in range(nb_noeuds):
+            if u != v and random.random() < proba_route:
+                G.add_edge(u, v, weight=random.randint(1, 10))
+    return G, cycles
 
 def dijkstra_dynamique(G, cycles, depart, arrivee):
     """Dijkstra qui tient compte du temps d’attente aux feux rouges."""
@@ -49,9 +49,9 @@ def dijkstra_dynamique(G, cycles, depart, arrivee):
             heapq.heappush(file, (nouveau_temps, voisin, chemin + [voisin]))
     return float("inf"), []
 
+# Animation dynamique
 
-# partie animation 
-def anime_ville(G, cycles, duree=50):
+def anime_ville(G, cycles,chemin, duree=40 ):
     pos = nx.spring_layout(G, seed=42)
 
     fig, ax = plt.subplots(figsize=(6, 6)) #taille 6*6
@@ -72,16 +72,20 @@ def anime_ville(G, cycles, duree=50):
                 labels=labels, node_size=1000, font_color="white")
         nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
         ax.set_title(f"Temps = {t}")
-        
+
         if chemin:
             # déterminer la position approximative de la voiture
-            idx = min(t // 2, len(chemin) - 1)  # avance tous les 2 "temps"
+            idx = min(t, len(chemin) - 1)  # avance tous les 2 "temps"
             current_node = chemin[idx]
             ax.scatter(*pos[current_node], c="blue", s=300, marker="o", edgecolors="black", zorder=3, label="Voiture")
 
         ax.set_title(f"Temps = {t}")
+
+
     ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False) #animation trucs
-    plt.show() 
+    plt.show()
+    
+
 
 #Exqimarchebien
 G, cycles = creer_ville(8, 0.3)
@@ -90,3 +94,5 @@ temps, chemin = dijkstra_dynamique(G, cycles, depart, arrivee)
 print(f"Chemin trouvé : {chemin} en {temps} secondes")
 
 anime_ville(G, cycles, chemin, duree=40)
+
+
