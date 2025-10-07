@@ -33,84 +33,61 @@ def creer_ville(nb_noeuds, proba_route=0.3):
 
 
 
+def dupliquer_graphe(adj, n):
+    """
+    Duplique un graphe n fois à partir d'une matrice d'adjacence (listes).
+    Aucune arête entre les copies.
+    """
+    m = len(adj)                     # taille d'une copie
+    N = m * n                        # taille totale
+    A = [[0 for k in range(N)] for l in range(N)]  # matrice vide NxN
+
+    for k in range(n):
+        i0 = k * m
+        for i in range(m):
+            for j in range(m):
+                A[i0 + i][i0 + j] = adj[i][j]
+
+    return A
 
 
 
+#affichage
+def afficher_graphe_matrice(adj):
+    """
+    Affiche un graphe à partir d'une matrice d'adjacence.
+    - adj : liste de listes ou np.array, matrice carrée (n x n)
+    """
+    n = len(adj)
+    G = nx.Graph()
 
+    # Ajout des noeuds
+    G.add_nodes_from(range(n))
 
+    # Ajout des arêtes à partir de la matrice
+    for i in range(n):
+        for j in range(i+1, n):  # éviter les doublons dans un graphe non orienté
+            if adj[i][j] != 0:
+                G.add_edge(i, j, weight=adj[i][j])
 
-
-
-
-
-
-"""
-def dijkstra_dynamique(G, cycles, depart, arrivee):
-    """Dijkstra qui tient compte du temps d’attente aux feux rouges."""
-    print('dijkstra_dynamique')
-    file = [(0, depart, [depart])]
-    vus = {}
-    while file:
-        temps, noeud, chemin = heapq.heappop(file)
-        if noeud == arrivee:
-            return temps, chemin
-        if noeud in vus and vus[noeud] <= temps:
-            continue
-        vus[noeud] = temps
-        for voisin in G.successors(noeud):
-            poids = G[noeud][voisin]["weight"]
-            t_arr = temps + poids
-            attente = temps_attente(cycles[voisin], t_arr)
-            nouveau_temps = t_arr + attente
-            heapq.heappush(file, (nouveau_temps, voisin, chemin + [voisin]))
-    return float("inf"), []
-
-
-
-# Animation dynamique
-
-def anime_ville(G, cycles,chemin, duree=40 ):
+    # Positionnement automatique
     pos = nx.spring_layout(G, seed=42)
 
-    fig, ax = plt.subplots(figsize=(6, 6)) #taille 6*6
-
-    def update(t): #temps courant
-        ax.clear() #enleve le graphe précedent
-        couleurs = []
-        labels = {}
-        for n in G.nodes():
-            cycle = cycles[n]
-            attente = temps_attente(cycle, t) #check les cycles
-            if attente == 0:
-                couleurs.append("green")
-            else:
-                couleurs.append("red")
-            labels[n] = f"{n}\n({cycle[0]},{cycle[1]})" #dessine la couleur et le cycle
-        nx.draw(G, pos, ax=ax, with_labels=True, node_color=couleurs,
-                labels=labels, node_size=1000, font_color="white")
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
-        ax.set_title(f"Temps = {t}")
-
-        if chemin:
-            # déterminer la position approximative de la voiture
-            idx = min(t, len(chemin) - 1)  # avance tous les 2 "temps"
-            current_node = chemin[idx]
-            ax.scatter(*pos[current_node], c="blue", s=300, marker="o", edgecolors="black", zorder=3, label="Voiture")
-
-        ax.set_title(f"Temps = {t}")
-
-
-    ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False) #animation trucs
+    # Affichage
+    plt.figure(figsize=(6, 6))
+    nx.draw(G, pos, with_labels=True, node_color="skyblue", node_size=800, edgecolors="black", font_weight="bold")
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
+    plt.title("Graphe à partir d'une matrice d'adjacence")
+    plt.axis("off")
     plt.show()
 
 
 
-#Exqimarchebien
-G, cycles = creer_ville(8, 0.3)
-depart, arrivee = 0, 5
-temps, chemin = dijkstra_dynamique(G, cycles, depart, arrivee)
-print(f"Chemin trouvé : {chemin} en {temps} secondes")
+adj = [
+    [0, 1, 0],
+    [1, 0, 1],
+    [0, 1, 0]
+]
 
-anime_ville(G, cycles, chemin, duree=40)
-
-"""
+M = dupliquer_graphe(adj, 3)
+afficher_graphe_matrice(M)
