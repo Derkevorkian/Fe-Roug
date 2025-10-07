@@ -32,6 +32,7 @@ def creer_ville(nb_noeuds, proba_route=0.3):
 
 def dijkstra_dynamique(G, cycles, depart, arrivee):
     """Dijkstra qui tient compte du temps d’attente aux feux rouges."""
+    print('dijkstra_dynamique')
     file = [(0, depart, [depart])]
     vus = {}
     while file:
@@ -48,6 +49,8 @@ def dijkstra_dynamique(G, cycles, depart, arrivee):
             nouveau_temps = t_arr + attente
             heapq.heappush(file, (nouveau_temps, voisin, chemin + [voisin]))
     return float("inf"), []
+
+
 
 # Animation dynamique
 
@@ -84,7 +87,7 @@ def anime_ville(G, cycles,chemin, duree=40 ):
 
     ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False) #animation trucs
     plt.show()
-    
+
 
 
 #Exqimarchebien
@@ -94,5 +97,4 @@ temps, chemin = dijkstra_dynamique(G, cycles, depart, arrivee)
 print(f"Chemin trouvé : {chemin} en {temps} secondes")
 
 anime_ville(G, cycles, chemin, duree=40)
-
 
