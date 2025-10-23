@@ -32,74 +32,110 @@ def creer_ville(nb_noeuds, proba_route=0.3):
 
 
 
-
-import matplotlib.pyplot as plt
-import networkx as nx
-
-def dupliquer_et_afficher(adj, n):
+def dupliquer_et_afficher_vertical(adj, n, couche_spacing=3.0, intra_scale=1.0):
     """
-    Duplique un graphe représenté par une matrice d’adjacence
-    et affiche les copies empilées verticalement.
+    Duplique le graphe donné par sa matrice d'adjacence `adj` verticalement et l'affiche.
+    - adj : matrice d'adjacence (liste de listes) de taille m x m (0 = pas d'arête, 1 = arête)
+    - n : nombre de duplications (le graphe final a L = n+1 couches : t = 0..n)
+    - couche_spacing : espacement vertical entre couches (plus grand => couches plus éloignées)
+    - intra_scale : échelle horizontale de la disposition locale de chaque couche
 
-    - adj : matrice d’adjacence (liste de listes)
-    - n : nombre de duplications (le graphe final aura n+1 couches)
+    Comment? :
+    - crée L = n+1 copies du graphe d'origine,
+    - pour chaque copie t, crée les arêtes internes selon adj,
+    - relie chaque noeud i@t à i@(t+1) (arête verticale),
+    - affiche le résultat avec chaque couche empilée verticalement.
     """
+    #check si graphe non vide
+    m = len(adj)
+    if m == 0:
+        print("Graphe vide")
+        return
 
-    # Étape 1 : paramètres de base
-    m = len(adj)        # nombre de noeuds par couche
-    L = n + 1           # nombre total de couches (graphe original + duplications)
-    M = m * L           # taille totale du graphe final
+    L = n + 1 #nombre de couche
+    M = m * L #nombre de noeuds dans le graphe
 
-    # Étape 2 : créer la nouvelle matrice d’adjacence
-    nouvelle = [[0 for _ in range(M)] for _ in range(M)]
+    G = nx.DiGraph()  # ou nx.Graph() si je veux non orienté///// je crée un graphe avec M noeuds
+    G.add_nodes_from(range(M))
 
-    # Copie du graphe original dans chaque couche
-    for couche in range(L):
-        offset = couche * m
+    # I) copie du graphe de base sur chaque couche
+    for t in range(L):
+        offset = t * m
+        #on rajoute le noeuds à la meme place modulo m avec un poids 1
         for i in range(m):
             for j in range(m):
                 if adj[i][j] != 0:
-                    nouvelle[offset + i][offset + j] = 1
+                    G.add_edge(offset + i, offset + j, weight=1)
 
-    # Relier les couches successives (chaque noeud vers sa copie en dessous)
-    for couche in range(L - 1):
-        off1 = couche * m
-        off2 = (couche + 1) * m
+    # II) on relie les graphes couches par couche
+    for t in range(L - 1):
+        off1 = t * m
+        off2 = (t + 1) * m
         for i in range(m):
-            nouvelle[off1 + i][off2 + i] = 1
+            G.add_edge(off1 + i, off2 + i, weight=1)  # lien vers le bas
+            G.add_edge(off2 + i, off1 + i, weight=1)  # lien vers le haut (optionnel)
 
-    # Étape 3 : construire le graphe NetworkX
-    G = nx.DiGraph()
-    for i in range(M):
-        for j in range(M):
-            if nouvelle[i][j] != 0:
-                G.add_edge(i, j)
-
-
-    # Étape 4 : calcul des positions pour affichage vertical
+    # III) construire positions : chaque couche a une petite disposition locale (triangle/cercle)
     pos = {}
-    ecart_vertical = 5
-    ecart_horizontal = 2
-
-    for couche in range(L):
+    # disposition locale : pour m nodes on place en cercle (ou si m==3 on place en triangle)
+    if m == 3:
+        # triangle équilatéral centré en x=0
+        local = [
+            (0.0 * intra_scale,  0.57735 * intra_scale),   # sommet haut
+            (-0.5 * intra_scale, -0.288675 * intra_scale), # base gauche
+            (0.5 * intra_scale,  -0.288675 * intra_scale)  # base droite
+        ]
+    else:
+        # cercle
+        local = []
         for i in range(m):
-            noeud = couche * m + i
-            pos[noeud] = (i * ecart_horizontal, -couche * ecart_vertical)
+            angle = 2 * math.pi * i / m
+            local.append((math.cos(angle) * intra_scale, math.sin(angle) * intra_scale))
 
-    # Étape 5 : affichage
-    plt.figure(figsize=(8, 6))
-    nx.draw(
-        G, pos,
-        with_labels=True,
-        node_color="skyblue",
-        node_size=700,
-        edgecolors="black",
-        arrowsize=15,
-        font_weight="bold"
-    )
-    plt.title(f"Graphe dupliqué verticalement ({L} couches)")
-    plt.axis("off")
+    # translation verticale par couche (hauteur décroissante pour que t=0 soit en haut)
+    for t in range(L):
+        y = - t * couche_spacing
+        offset = t * m
+        for i in range(m):
+            x_local, y_local = local[i]
+            pos[offset + i] = (x_local, y + y_local)
+
+    # IV) dessin : couleur par couche pour la lisibilité
+    node_colors = []
+    for node in range(M):
+        couche = node // m
+        # couleur simple par couche (hue)
+        cmap = plt.cm.get_cmap('tab10')
+        node_colors.append(cmap(couche % 10))
+
+    plt.figure(figsize=(6, max(4, 1.2 * L)))
+    nx.draw_networkx_nodes(G, pos, node_size=450, node_color=node_colors, edgecolors="k")
+    nx.draw_networkx_labels(G, pos, font_color="white")
+    # dessiner arêtes internes en noir, verticales en rouge pour distinguer
+    # on sépare les arêtes selon si elles relient des couches différentes ou non
+    intra_edges = []
+    inter_edges = []
+    for u, v in G.edges():
+        if (u // m) == (v // m):
+            intra_edges.append((u, v))
+        else:
+            inter_edges.append((u, v))
+
+    nx.draw_networkx_edges(G, pos, edgelist=intra_edges, arrows=True, arrowstyle='-|>', width=1.2)
+    nx.draw_networkx_edges(G, pos, edgelist=inter_edges, arrows=True, edge_color='red', arrowstyle='-|>', width=1.5)
+
+    plt.title(f"Graphes empilés verticalement — {L} couches (chaîne)")
+    plt.axis('off')
+    plt.tight_layout()
     plt.show()
 
-    # on renvoie la matrice dupliquée si on veut la réutiliser
-    return nouvelle
+    return G
+
+
+adj_carre = [
+    [0, 1, 0, 1],
+    [1, 0, 1, 0],  
+    [0, 1, 0, 1],  
+    [1, 0, 1, 0]   
+]
+dupliquer_et_afficher_vertical(adj_carre, n=3)
