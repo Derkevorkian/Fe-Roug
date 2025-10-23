@@ -33,61 +33,73 @@ def creer_ville(nb_noeuds, proba_route=0.3):
 
 
 
-def dupliquer_graphe(adj, n):
-    """
-    Duplique un graphe n fois à partir d'une matrice d'adjacence (listes).
-    Aucune arête entre les copies.
-    """
-    m = len(adj)                     # taille d'une copie
-    N = m * n                        # taille totale
-    A = [[0 for k in range(N)] for l in range(N)]  # matrice vide NxN
+import matplotlib.pyplot as plt
+import networkx as nx
 
-    for k in range(n):
-        i0 = k * m
+def dupliquer_et_afficher(adj, n):
+    """
+    Duplique un graphe représenté par une matrice d’adjacence
+    et affiche les copies empilées verticalement.
+
+    - adj : matrice d’adjacence (liste de listes)
+    - n : nombre de duplications (le graphe final aura n+1 couches)
+    """
+
+    # Étape 1 : paramètres de base
+    m = len(adj)        # nombre de noeuds par couche
+    L = n + 1           # nombre total de couches (graphe original + duplications)
+    M = m * L           # taille totale du graphe final
+
+    # Étape 2 : créer la nouvelle matrice d’adjacence
+    nouvelle = [[0 for _ in range(M)] for _ in range(M)]
+
+    # Copie du graphe original dans chaque couche
+    for couche in range(L):
+        offset = couche * m
         for i in range(m):
             for j in range(m):
-                A[i0 + i][i0 + j] = adj[i][j]
+                if adj[i][j] != 0:
+                    nouvelle[offset + i][offset + j] = 1
 
-    return A
+    # Relier les couches successives (chaque noeud vers sa copie en dessous)
+    for couche in range(L - 1):
+        off1 = couche * m
+        off2 = (couche + 1) * m
+        for i in range(m):
+            nouvelle[off1 + i][off2 + i] = 1
+
+    # Étape 3 : construire le graphe NetworkX
+    G = nx.DiGraph()
+    for i in range(M):
+        for j in range(M):
+            if nouvelle[i][j] != 0:
+                G.add_edge(i, j)
 
 
+    # Étape 4 : calcul des positions pour affichage vertical
+    pos = {}
+    ecart_vertical = 5
+    ecart_horizontal = 2
 
-#affichage
-def afficher_graphe_matrice(adj):
-    """
-    Affiche un graphe à partir d'une matrice d'adjacence.
-    - adj : liste de listes ou np.array, matrice carrée (n x n)
-    """
-    n = len(adj)
-    G = nx.Graph()
+    for couche in range(L):
+        for i in range(m):
+            noeud = couche * m + i
+            pos[noeud] = (i * ecart_horizontal, -couche * ecart_vertical)
 
-    # Ajout des noeuds
-    G.add_nodes_from(range(n))
-
-    # Ajout des arêtes à partir de la matrice
-    for i in range(n):
-        for j in range(i+1, n):  # éviter les doublons dans un graphe non orienté
-            if adj[i][j] != 0:
-                G.add_edge(i, j, weight=adj[i][j])
-
-    # Positionnement automatique
-    pos = nx.spring_layout(G, seed=42)
-
-    # Affichage
-    plt.figure(figsize=(6, 6))
-    nx.draw(G, pos, with_labels=True, node_color="skyblue", node_size=800, edgecolors="black", font_weight="bold")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, "weight"))
-    plt.title("Graphe à partir d'une matrice d'adjacence")
+    # Étape 5 : affichage
+    plt.figure(figsize=(8, 6))
+    nx.draw(
+        G, pos,
+        with_labels=True,
+        node_color="skyblue",
+        node_size=700,
+        edgecolors="black",
+        arrowsize=15,
+        font_weight="bold"
+    )
+    plt.title(f"Graphe dupliqué verticalement ({L} couches)")
     plt.axis("off")
     plt.show()
 
-
-
-adj = [
-    [0, 1, 0],
-    [1, 0, 1],
-    [0, 1, 0]
-]
-
-M = dupliquer_graphe(adj, 3)
-afficher_graphe_matrice(M)
+    # on renvoie la matrice dupliquée si on veut la réutiliser
+    return nouvelle
