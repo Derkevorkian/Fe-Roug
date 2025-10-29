@@ -76,7 +76,7 @@ def dupliquer_et_afficher_vertical(adj, n, couche_spacing=50.0, intra_scale=50.0
         off2 = (t + 1) * m
         for i in range(m):
             G.add_edge(off1 + i, off2 + i, weight=1)  # lien vers le bas
-            G.add_edge(off2 + i, off1 + i, weight=1)  # lien vers le haut (optionnel)
+            """ G.add_edge(off2 + i, off1 + i, weight=1)   lien vers le haut pas vraiment utile """
 
     # III) construire positions : chaque couche a une petite disposition locale (triangle/cercle)
     pos = {}
