@@ -4,9 +4,70 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import math
+import numpy as np 
+
+
+def moduler(Matrice,Nrep):
+    poids = []
+    for t in range(Nrep):
+        liste = []
+        for i in range(len(Matrice)):
+            k=i*Nrep + t
+            liste.append(k)
+        poids.append(liste)
+    return poids
+
+def wrap(i,t,Nrep):
+    return i*Nrep + t
+
+def unwrap(k,N):
+    return (t//N,t%n)
+
+
+def dupliquergraphe(Matrice, Nrep):
+    poids = moduler(Matrice, Nrep)
+    G = nx.DiGraph()
+    M = len(Matrice)
+
+    for i in range(M):
+        for t in range(Nrep):
+            G.add_node(wrap(i, t, Nrep))
+
+    for i in range(M):
+        for j in range(M):
+            if Matrice[i][j] > 0: 
+                for t in range(Nrep):
+                    G.add_edge(wrap(i, t, Nrep),
+                        wrap(j, (t + 1) % Nrep, Nrep),
+                        weight=Matrice[i][j])
+
+
+    pos = nx.spring_layout(G, seed=42)
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=800)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    plt.show()
+
+    return G
+
+# Exemple d'utilisation
+A = [
+    [0, 7, 9],
+    [0, 0, 4],
+    [0, 0, 0]
+]
+
+G = dupliquergraphe(A, Nrep=2)
+
+
+
+
+
+
+"""
 
 def temps_attente(cycle, t):
-    """Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge)."""
+    ""Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge).""
     vert, rouge = cycle
     periode = vert + rouge
     t_mod = t % periode
@@ -16,7 +77,7 @@ def temps_attente(cycle, t):
         return periode - t_mod  # attente jusqu'au prochain vert
 
 def creer_ville(nb_noeuds, proba_route=0.3):
-    """Crée une ville simple avec des routes et des feux rouges."""
+    ""Crée une ville simple avec des routes et des feux rouges.""
     G = nx.DiGraph()
     cycles = {}
     for i in range(nb_noeuds):
@@ -30,123 +91,6 @@ def creer_ville(nb_noeuds, proba_route=0.3):
             if u != v and random.random() < proba_route:
                 G.add_edge(u, v, weight=random.randint(1, 10))
     return G, cycles
-
-
-
-
-
-def dupliquer_et_afficher_vertical(adj, n, couche_spacing=50.0, intra_scale=50.0):
-    """
-    Duplique le graphe donné par sa matrice d'adjacence `adj` verticalement et l'affiche.
-    - adj : matrice d'adjacence (liste de listes) de taille m x m (0 = pas d'arête, 1 = arête)
-    - n : nombre de duplications (le graphe final a L = n+1 couches : t = 0..n)
-    - couche_spacing : espacement vertical entre couches (plus grand => couches plus éloignées)
-    - intra_scale : échelle horizontale de la disposition locale de chaque couche
-
-    Comportement :
-    - crée L = n+1 copies du graphe d'origine,
-    - pour chaque copie t, crée les arêtes internes selon adj,
-    - relie chaque noeud i@t à i@(t+1) (arête verticale),
-    - affiche le résultat avec chaque couche empilée verticalement.
-    """
-    #check si graphe non vide
-    m = len(adj)
-    if m == 0:
-        print("Graphe vide")
-        return
-
-    L = n + 1 #nombre de couche
-    M = m * L #nombre de noeuds dans le graphe
-
-    G = nx.DiGraph()  # ou nx.Graph() si je veux non orienté///// je crée un graphe avec M noeuds
-    G.add_nodes_from(range(M))
-
-    # I) copie du graphe de base sur chaque couche
-    for t in range(L):
-        offset = t * m
-        #on rajoute le noeuds à la meme place modulo m avec un poids 1
-        for i in range(m):
-            for j in range(m):
-                if adj[i][j] != 0:
-                    G.add_edge(offset + i, offset + j, weight=1)
-
-    # II) on relie les graphes couches par couche
-    for t in range(L - 1):
-        off1 = t * m
-        off2 = (t + 1) * m
-        for i in range(m):
-            G.add_edge(off1 + i, off2 + i, weight=1)  # lien vers le bas
-            """ G.add_edge(off2 + i, off1 + i, weight=1)   lien vers le haut pas vraiment utile """
-
-    # III) construire positions : chaque couche a une petite disposition locale (triangle/cercle)
-    pos = {}
-    # disposition locale : pour m nodes on place en cercle (ou si m==3 on place en triangle)
-    if m == 3:
-        # triangle équilatéral centré en x=0
-        local = [
-            (0.0 * intra_scale,  0.57735 * intra_scale),   # sommet haut
-            (-0.5 * intra_scale, -0.288675 * intra_scale), # base gauche
-            (0.5 * intra_scale,  -0.288675 * intra_scale)  # base droite
-        ]
-    else:
-        # cercle
-        local = []
-        for i in range(m):
-            angle = 2 * math.pi * i / m
-            local.append((math.cos(angle) * intra_scale, math.sin(angle) * intra_scale))
-
-    # translation verticale par couche (hauteur décroissante pour que t=0 soit en haut)
-    for t in range(L):
-        y = - t * couche_spacing
-        offset = t * m
-        for i in range(m):
-            x_local, y_local = local[i]
-            pos[offset + i] = (x_local, y + y_local)
-
-    # IV) dessin : couleur par couche pour la lisibilité
-    node_colors = []
-    for node in range(M):
-        couche = node // m
-        # couleur simple par couche (hue)
-        cmap = plt.cm.get_cmap('tab10')
-        node_colors.append(cmap(couche % 10))
-
-    plt.figure(figsize=(6, max(4, 1.2 * L)))
-    nx.draw_networkx_nodes(G, pos, node_size=450, node_color=node_colors, edgecolors="k")
-    nx.draw_networkx_labels(G, pos, font_color="white")
-    # dessiner arêtes internes en noir, verticales en rouge pour distinguer
-    # on sépare les arêtes selon si elles relient des couches différentes ou non
-    intra_edges = []
-    inter_edges = []
-    for u, v in G.edges():
-        if (u // m) == (v // m):
-            intra_edges.append((u, v))
-        else:
-            inter_edges.append((u, v))
-
-    nx.draw_networkx_edges(G, pos, edgelist=intra_edges, arrows=True, arrowstyle='-|>', width=1.2)
-    nx.draw_networkx_edges(G, pos, edgelist=inter_edges, arrows=True, edge_color='red', arrowstyle='-|>', width=1.5)
-
-    plt.title(f"Graphes empilés verticalement — {L} couches (chaîne)")
-    plt.axis('off')
-    plt.tight_layout()
-    plt.show()
-
-    return G
-
-"""
-adj = [
-    #0 1 2 3 4
-    [0, 1, 1, 1, 1],  # 0 relié à 1,3,4
-    [1, 0, 1, 1, 1],  # 1 relié à 0,2
-    [0, 1, 0, 1, 1],  # 2 relié à 1,3
-    [1, 1, 1, 0, 1],  # 3 relié à 0,2,4
-    [1, 1, 1, 1, 0]   # 4 relié à 0,3
-]
-dupliquer_et_afficher_vertical(adj, n=4)
-"""
-
-
 
 def dijkstra(graphe, depart):
     # Distances connues (au départ, infini sauf départ = 0)
@@ -177,3 +121,5 @@ def dijkstra(graphe, depart):
         visites.append(sommet_courant)
 
     return distances
+    
+"""
