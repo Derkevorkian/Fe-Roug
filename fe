@@ -21,35 +21,52 @@ def wrap(i, t, Nrep):
     return i*Nrep + t
 
 def unwrap(k, N):
-    return (t//N, t % N)
+    return (t//N, t%n)
 
+
+def attente(i, t):
+    # Temps passé à attendre en restant sur place;une seconde d'attente par défaut
+    return 1
 
 def dupliquergraphe(Matrice, Nrep):
-
+    poids = moduler(Matrice, Nrep)
     G = nx.DiGraph()
     M = len(Matrice)
 
+    # Ajout des nœuds (i, t)
     for i in range(M):
         for t in range(Nrep):
             G.add_node(wrap(i, t, Nrep))
 
+    # Ajout des arêtes inter-sommets (déplacements)
     for i in range(M):
         for j in range(M):
             w = Matrice[i][j]
-            if w != 0 and w is not None:
-
+            if w is not None:           # un arc existe
                 for t in range(Nrep):
-                    if callable(w): #fonction qui check si qqch est une fonction 
-                        poids = w(t)       
-                    else:
-                        poids = w    
 
+                    if callable(w):
+                        poids = w(t)    # calcule le poids en fonction du temps t
+                    else:
+                        poids = w       # poids constant
+                        
                     G.add_edge(
                         wrap(i, t, Nrep),
                         wrap(j, (t + 1) % Nrep, Nrep),
-                        weight=poids
-                    )
+                        weight=poids)
 
+
+# faire du sur place 
+    for i in range(M):
+        for t in range(Nrep):
+            G.add_edge(
+                wrap(i, t, Nrep),
+                wrap(i, (t + 1) % Nrep, Nrep),
+                weight=attente(i, t)     # attente de 1 sec 
+            )
+
+
+    # Affichage
     pos = nx.spring_layout(G, seed=42)
     nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=800)
     edge_labels = nx.get_edge_attributes(G, 'weight')
@@ -58,6 +75,7 @@ def dupliquergraphe(Matrice, Nrep):
 
     return G
 
+
 M = [
     [0,           lambda t: 5 + t,       0],
     [0,           0,                    lambda t: 10 - t],
@@ -65,8 +83,6 @@ M = [
 ]
 
 G = dupliquergraphe(M, Nrep=4)
-
-
 
 
 """
