@@ -7,82 +7,92 @@ import math
 import numpy as np
 
 
-def moduler(Matrice, Nrep):
-    poids = []
-    for t in range(Nrep):
-        liste = []
-        for i in range(len(Matrice)):
-            k = i*Nrep + t
-            liste.append(k)
-        poids.append(liste)
-    return poids
-
 def wrap(i, t, Nrep):
-    return i*Nrep + t
-
-def unwrap(k, N):
-    return (t//N, t%n)
-
+    return i * Nrep + t
 
 def attente(i, t):
-    # Temps passé à attendre en restant sur place;une seconde d'attente par défaut
-    return 1
+    return 99
+
+def aux1(t):
+    return 5 + t
+
+def aux2(t):
+    return 10 - t
 
 def dupliquergraphe(Matrice, Nrep):
-    poids = moduler(Matrice, Nrep)
     G = nx.DiGraph()
-    M = len(Matrice)
+    M_len = len(Matrice)
 
-    # Ajout des nœuds (i, t)
-    for i in range(M):
+    #  Ajout des nœuds
+    for i in range(M_len):
         for t in range(Nrep):
             G.add_node(wrap(i, t, Nrep))
 
-    # Ajout des arêtes inter-sommets (déplacements)
-    for i in range(M):
-        for j in range(M):
+    #  Ajout des arêtes de déplacement (i -> j)
+    for i in range(M_len):
+        for j in range(M_len):
             w = Matrice[i][j]
-            if w is not None:           # un arc existe
+
+            # On ignore les diagonales et les poids None
+            if w is not None and i != j:
+
                 for t in range(Nrep):
-
                     if callable(w):
-                        poids = w(t)    # calcule le poids en fonction du temps t
+                        poids = w(t)
                     else:
-                        poids = w       # poids constant
-                        
-                    G.add_edge(
-                        wrap(i, t, Nrep),
-                        wrap(j, (t + 1) % Nrep, Nrep),
-                        weight=poids)
+                        poids = w
 
+                    # pas d'arête si poids 0
+                    if poids != 0:
+                        G.add_edge(
+                            wrap(i, t, Nrep),
+                            wrap(j, (t + 1) % Nrep, Nrep),
+                            weight=poids
+                        )
 
-# faire du sur place 
-    for i in range(M):
+    #   Ajout des arêtes d'attente (i -> i)
+    for i in range(M_len):
         for t in range(Nrep):
-            G.add_edge(
-                wrap(i, t, Nrep),
-                wrap(i, (t + 1) % Nrep, Nrep),
-                weight=attente(i, t)     # attente de 1 sec 
-            )
+            poids_attente = attente(i, t)
 
+            # pas d'arête si poids 0
+            if poids_attente != 0:
+                G.add_edge(
+                    wrap(i, t, Nrep),
+                    wrap(i, (t + 1) % Nrep, Nrep),
+                    weight=poids_attente
+                )
 
-    # Affichage
-    pos = nx.spring_layout(G, seed=42)
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=800)
+    # AFFICHAGE
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(G, seed=42, k=0.9)
+
+    # Dessin des nœuds
+    nx.draw_networkx_nodes(G, pos, node_color='lightgreen', node_size=800)
+    nx.draw_networkx_labels(G, pos, font_size=12, font_weight='bold')
+
+    # Dessin des arêtes
+    nx.draw_networkx_edges(G, pos, arrows=True)
+
+    # Dessin des poids
     edge_labels = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+
+    plt.title("Graphe dédynamisé")
+    plt.axis('off')
     plt.show()
 
     return G
 
 
 M = [
-    [0,           lambda t: 5 + t,       0],
-    [0,           0,                    lambda t: 10 - t],
+    [0,           lambda t: aux1(t) ,       0],
+    [0,           0,                    lambda t: aux2(t)],
     [3,           0,                    0]
 ]
-
 G = dupliquergraphe(M, Nrep=4)
+
+
 
 
 """
