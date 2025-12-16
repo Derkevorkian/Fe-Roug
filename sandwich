@@ -1,0 +1,78 @@
+import networkx as nx
+import random
+import matplotlib.pyplot as plt
+
+
+
+def temps_attente(cycle, t):
+    """Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge)."""
+    vert, rouge = cycle
+    periode = vert + rouge
+    t_mod = t % periode
+    if t_mod < vert:
+        return 0  # vert
+    else:
+        return periode - t_mod  # rouge
+
+def creer_ville(nb_noeuds, proba_route=0.4):
+    """Crée une ville simple avec des routes et des feux rouges."""
+    G = nx.DiGraph()
+    cycles = {}
+
+    # Création des noeuds et des cycles de feux
+    for i in range(nb_noeuds):
+        # (temps_vert, temps_rouge) aléatoires
+        cycles[i] = (random.randint(5, 10), random.randint(5, 10))
+        G.add_node(i)
+
+    # Création des routes
+    for u in range(nb_noeuds):
+        for v in range(nb_noeuds):
+            if u != v and random.random() < proba_route:
+                # Le poids est le temps de trajet sur la route (sans compter le feu)
+                G.add_edge(u, v, weight=random.randint(2, 5))
+    return G, cycles
+
+
+def wrap(i, t, Nrep):
+    return i * Nrep + t
+
+def unwrap(k, Nrep):
+    return (k // Nrep, k % Nrep)
+
+def dedynamiser_ville(G_ville, cycles, Nrep):
+    """
+    Transforme le graphe dynamique de la ville en un grand graphe statique espace-temps.
+    Chaque arête prend en compte le trajet + l'attente au feu à l'arrivée.
+    """
+    G_big = nx.DiGraph()
+
+
+    # creation des noeuds
+    for u in G_ville.nodes():
+        for t in range(Nrep):
+            G_big.add_node(wrap(u, t, Nrep))
+
+    # création des arêtes
+    for u, v, data in G_ville.edges(data=True):
+        w_route = data['weight']
+
+        for t in range(Nrep):
+            # Calcul du moment d'arrivée au feu
+            t_arrivee_feu = t + w_route
+
+            # Calcul de l'attente nécessaire au noeud v à ce moment là
+            # Attention: Si on dépasse Nrep, le calcul du cycle reste valide (t est absolu pour le cycle)
+            wait = temps_attente(cycles[v], t_arrivee_feu)
+
+            cout_total = w_route + wait
+            t_final = t + cout_total
+
+            # On ne crée l'arête que si on ne sort pas de l'horizon temporel Nrep
+            if t_final < Nrep:
+                source = wrap(u, t, Nrep)
+                dest = wrap(v, t_final, Nrep)
+
+                G_big.add_edge(source, dest, weight=cout_total)
+
+    return G_big
