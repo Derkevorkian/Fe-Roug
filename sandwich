@@ -1,6 +1,7 @@
 import networkx as nx
 import random
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 
@@ -14,15 +15,19 @@ def temps_attente(cycle, t):
     else:
         return periode - t_mod  # rouge
 
-def creer_ville(nb_noeuds, proba_route=0.4):
-    """Crée une ville simple avec des routes et des feux rouges."""
+
+
+
+#------------------------------------------------Different graphes--------------------------------------------------------------------------
+"""def creer_ville(nb_noeuds, proba_route=0.4):#graphe random
+    Crée une ville simple avec des routes et des feux rouges.
     G = nx.DiGraph()
     cycles = {}
 
     # Création des noeuds et des cycles de feux
     for i in range(nb_noeuds):
         # (temps_vert, temps_rouge) aléatoires
-        cycles[i] = (random.randint(5, 10), random.randint(5, 10))
+        cycles[i] = (random.randint(1, 3), random.randint(3,5)) #iciiiiiiiiiii si je veux modifier des temps de trucs
         G.add_node(i)
 
     # Création des routes
@@ -33,6 +38,77 @@ def creer_ville(nb_noeuds, proba_route=0.4):
                 G.add_edge(u, v, weight=random.randint(2, 5))
     return G, cycles
 
+
+
+def creer_ville_fixe():
+    G = nx.DiGraph()
+
+    # Définition des cycles de feux (vert, rouge)
+    cycles = {
+        0: (3, 4),
+        1: (2, 5),
+        2: (4, 3),
+        3: (3, 3),
+        4: (5, 4)
+    }
+
+    # Ajout des noeuds
+    for n in cycles:
+        G.add_node(n)
+
+    # Ajout des routes (u, v, temps_de_trajet)
+    routes = [
+        (0, 1, 3),
+        (1, 2, 2),
+        (2, 4, 4),
+        (0, 3, 5),
+        (3, 4, 2),
+        (1, 3, 3),
+        (3, 2, 1)
+    ]
+
+    for u, v, w in routes:
+        G.add_edge(u, v, weight=w)
+
+    return G, cycles
+
+
+
+"""
+def creer_grille(n, m, seed):
+    random.seed(seed)
+
+    G = nx.DiGraph()
+    cycles = {}
+
+    node_id = lambda i, j: i * m + j
+
+    for i in range(n):
+        for j in range(m):
+            u = node_id(i, j)
+            G.add_node(u)
+
+            # Feux aléatoires mais reproductibles
+            cycles[u] = (
+                random.randint(1, 3),   # temps vert
+                random.randint(3, 5)    # temps rouge
+            )
+
+            # Connexions verticales
+            if i + 1 < n:
+                v = node_id(i + 1, j)
+                G.add_edge(u, v, weight=2)
+                G.add_edge(v, u, weight=2)
+
+            # Connexions horizontales
+            if j + 1 < m:
+                v = node_id(i, j + 1)
+                G.add_edge(u, v, weight=2)
+                G.add_edge(v, u, weight=2)
+
+    return G, cycles
+
+#---------------------------------------------------------------------------------
 
 def wrap(i, t, Nrep):
     return i * Nrep + t
@@ -47,7 +123,7 @@ def dedynamiser_ville(G_ville, cycles, Nrep):
     """
     G_big = nx.DiGraph()
 
-    # creation des noeuds
+    #creation des noeuds
     for u in G_ville.nodes():
         for t in range(Nrep):
             G_big.add_node(wrap(u, t, Nrep))
@@ -157,16 +233,24 @@ def anime_ville(G, cycles, duree=50):
     ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False)
     plt.show()
 
-
+#--------------------------------------------------------Requetes-------------------------------------------
 
 # Paramètres
-NB_NOEUDS = 5
+NB_NOEUDS = 5 # utile pour la création de grpahe random
 HORIZON = 60
-A = 0
-B = 4
+
+A = 0 #choix de distances des points
+B = 8
 
 # Calculs
-G_ville, cycles = creer_ville(NB_NOEUDS) #Digraphe, dico
+G_ville, cycles =creer_grille(3, 3, seed=17)
+ #)Digraphe, dico
+
+"""Pour changer les graphes differents fonctions possible:
+-  creer_ville(NB_NOEUDS) pour les graphes randoms
+-  creer_ville_fixe() pour graphe fixe
+-  creer_grille(n,m) pour la creation d'une grille
+"""
 G_big = dedynamiser_ville(G_ville, cycles, HORIZON)
 tous_res = tous_les_dijkstras(G_big, NB_NOEUDS, HORIZON)
 
