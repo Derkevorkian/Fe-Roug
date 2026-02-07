@@ -73,10 +73,10 @@ def creer_ville_fixe():
     return G, cycles
 
 
-
-"""
 def creer_grille(n, m, seed):
-    random.seed(seed)
+    
+    if seed is not None:
+        random.seed(seed)
 
     G = nx.DiGraph()
     cycles = {}
@@ -108,6 +108,88 @@ def creer_grille(n, m, seed):
 
     return G, cycles
 
+"""
+
+def creer_etoile(nb_branches, seed):
+    ""
+    Crée un graphe en étoile.
+    Le noeud 0 est le centre.
+    Les noeuds 1 à nb_branches sont les feuilles.
+    ""
+    if seed is not None:
+        random.seed(seed)
+        #possibilité de mettre le code en random 
+        
+    G = nx.DiGraph()
+    cycles = {}
+    
+    # Le centre est le noeud 0
+    nb_noeuds = nb_branches + 1
+    
+    for i in range(nb_noeuds):
+        G.add_node(i)
+        cycles[i] = (
+            random.randint(1, 3), 
+            random.randint(3, 5)
+        )
+        
+    # Connexions (Centre <-> Feuilles)
+    # i commence à 1 car 0 est le centre
+    for i in range(1, nb_noeuds):
+        
+        # Aller vers la branche (Centre -> Feuille)
+        w_aller = random.randint(2, 5)
+        G.add_edge(0, i, weight=w_aller)
+        
+        # Revenir de la branche (Feuille -> Centre)
+        w_retour = random.randint(2, 5)
+        G.add_edge(i, 0, weight=w_retour)
+        
+    return G, cycles
+
+  """  
+def creer_biparti(n1, n2, seed, proba_liaison=0.5 ):
+    """
+    Crée un graphe biparti aléatoire.
+    n1 : nombre de noeuds dans le groupe 1 (indices 0 à n1-1)
+    n2 : nombre de noeuds dans le groupe 2 (indices n1 à n1+n2-1)
+    """
+    if seed is not None:
+        random.seed(seed)
+    
+    G = nx.DiGraph()
+    cycles = {}
+    
+    nb_total = n1 + n2
+    
+    # Création des noeuds et cycles
+    for i in range(nb_total):
+        G.add_node(i)
+        cycles[i] = (
+            random.randint(1, 3),   # temps vert
+            random.randint(3, 5)    # temps rouge
+        )
+        
+    # Création des arêtes (uniquement entre groupe 1 et groupe 2)
+    # Groupe 1 : de 0 à n1-1
+    # Groupe 2 : de n1 à n1+n2-1
+    
+    for u in range(n1): # Pour chaque noeud du groupe 1
+        for v in range(n1, nb_total): # Pour chaque noeud du groupe 2
+            
+            # Arête Groupe 1 -> Groupe 2
+            if random.random() < proba_liaison:
+                w = random.randint(2, 5)
+                G.add_edge(u, v, weight=w)
+                
+            # Arête Groupe 2 -> Groupe 1 (pour pouvoir revenir)
+            if random.random() < proba_liaison:
+                w = random.randint(2, 5)
+                G.add_edge(v, u, weight=w)
+                
+    return G, cycles
+    
+    """
 #---------------------------------------------------------------------------------
 
 def wrap(i, t, Nrep):
@@ -233,23 +315,31 @@ def anime_ville(G, cycles, duree=50):
     ani = animation.FuncAnimation(fig, update, frames=duree, interval=500, repeat=False)
     plt.show()
 
+
+
+
+
 #--------------------------------------------------------Requetes-------------------------------------------
 
 # Paramètres
 NB_NOEUDS = 5 # utile pour la création de grpahe random
 HORIZON = 60
-
-A = 0 #choix de distances des points
-B = 8
+seed = 17
+n1=3
+n2=4
+A = 4 #choix de distances des points
+B = 3
 
 # Calculs
-G_ville, cycles =creer_grille(3, 3, seed=17)
+G_ville, cycles = creer_biparti(n1,n2,seed, proba_liaison=0.5)
  #)Digraphe, dico
 
 """Pour changer les graphes differents fonctions possible:
 -  creer_ville(NB_NOEUDS) pour les graphes randoms
 -  creer_ville_fixe() pour graphe fixe
--  creer_grille(n,m) pour la creation d'une grille
+-  creer_grille(n, m, seed) pour la creation d'une grille
+-  creer_etoile(nb_branches, seed) pour creer graphe étoilé 
+-  creer_biparti(n1, n2, proba_liaison=0.5, seed) pour creer graphe bipa
 """
 G_big = dedynamiser_ville(G_ville, cycles, HORIZON)
 tous_res = tous_les_dijkstras(G_big, NB_NOEUDS, HORIZON)
@@ -268,4 +358,4 @@ else:
     print(" -> ".join(etapes))
 
 
-anime_ville(G_ville, cycles, duree=40)
+anime_ville(G_ville, cycles, duree=40)ille, cycles, duree=40)
