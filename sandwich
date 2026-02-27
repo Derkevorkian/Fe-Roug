@@ -3,8 +3,6 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-"""
-
 def temps_attente(cycle, t):
     #Calcule le temps d'attente au feu selon l'heure t et son cycle (vert, rouge).
     vert, rouge = cycle
@@ -14,25 +12,6 @@ def temps_attente(cycle, t):
         return 0  # vert
     else:
         return periode - t_mod  # rouge
-        """
-def temps_attente(cycle, t):
-    """
-    Calcule le temps d'attente au feu selon l'heure absolue t.
-    cycle = (temps_vert, temps_rouge, decalage)
-    """
-    vert, rouge, decalage = cycle
-    periode = vert + rouge
-    
-    # On ramène le temps t au temps effectif du cycle en soustrayant le décalage
-    # Le modulo permet de se situer dans le cycle en cours
-    t_mod = (t - decalage) % periode
-    
-    # Phase 1 : Le feu est vert
-    if t_mod < vert:
-        return 0
-    # Phase 2 : Le feu est rouge, on attend la fin de la période
-    else:
-        return periode - t_mod
 
 
 
